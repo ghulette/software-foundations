@@ -38,7 +38,7 @@ Require Import Maps.
         - correctness (in the sense of preserving meaning) of a number
           of useful program transformations
 
-        - behavioral equivalence of programs (in the [Equiv] chapter). 
+        - behavioral equivalence of programs (in the [Equiv] chapter).
 
     If we stopped here, we would already have something useful: a set
     of tools for defining and discussing programming languages and
@@ -70,7 +70,7 @@ Require Import Maps.
     subject of intensive research right up to the present day.  It
     lies at the core of a multitude of tools that are being used in
     academia and industry to specify and verify real software
-    systems. 
+    systems.
 
     Hoare Logic combines two beautiful ideas: a natural way of
     writing down _specifications_ of programs, and a _compositional
@@ -202,7 +202,7 @@ Notation "{{ P }}  c  {{ Q }}" :=
 
    5) {{X = m}}
       c
-      {{Y = real_fact m}}    
+      {{Y = real_fact m}}
 
    6) {{True}}
       c
@@ -244,7 +244,7 @@ Notation "{{ P }}  c  {{ Q }}" :=
 (** (Note that we're using informal mathematical notations for
    expressions inside of commands, for readability, rather than their
    formal [aexp] and [bexp] encodings.  We'll continue doing so
-   throughout the chapter.) 
+   throughout the chapter.)
 
    To get us warmed up for what's coming, here are two simple
    facts about Hoare triples. *)
@@ -357,9 +357,9 @@ Definition assn_sub X a P : Assertion :=
 
 Notation "P [ X |-> a ]" := (assn_sub X a P) (at level 10).
 
-(** That is, [P [X |-> a]] is an assertion -- let's call it [P'] -- 
-    that is just like [P] except that, wherever [P] looks up the 
-    variable [X] in the current state, [P'] instead uses the value 
+(** That is, [P [X |-> a]] is an assertion -- let's call it [P'] --
+    that is just like [P] except that, wherever [P] looks up the
+    variable [X] in the current state, [P'] instead uses the value
     of the expression [a].
 
     To see how this works, let's calculate what happens with a couple
@@ -446,10 +446,24 @@ Proof.
        X ::= 3
        {{ 0 <= X /\ X <= 5 }}
 
-   ...into formal statements (use the names [assn_sub_ex1] 
+   ...into formal statements (use the names [assn_sub_ex1]
    and [assn_sub_ex2]) and use [hoare_asgn] to prove them. *)
 
-(* FILL IN HERE *)
+Example assn_sub_ex1 :
+  {{ (fun st => st X <= 5) [X |-> APlus (AId X) (ANum 1)]}}
+  (X ::= APlus (AId X) (ANum 1))
+  {{fun st => st X <= 5}}.
+Proof.
+  apply hoare_asgn.
+Qed.
+
+Example assn_sub_ex2 :
+  {{ (fun st => 0 <= st X /\ st X <= 5) [X |-> ANum 3] }}
+  (X ::= ANum 3)
+  {{ fun st => 0 <= st X /\ st X <= 5 }}.
+Proof.
+  apply hoare_asgn.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars (hoare_asgn_wrong)  *)
@@ -461,18 +475,31 @@ Proof.
       ------------------------------ (hoare_asgn_wrong)
       {{ True }} X ::= a {{ X = a }}
 
-    Give a counterexample showing that this rule is incorrect and 
-    argue informally that it is really a counterexample.  (Hint: 
-    The rule universally quantifies over the arithmetic expression 
-    [a], and your counterexample needs to exhibit an [a] for which 
+    Give a counterexample showing that this rule is incorrect and
+    argue informally that it is really a counterexample.  (Hint:
+    The rule universally quantifies over the arithmetic expression
+    [a], and your counterexample needs to exhibit an [a] for which
     the rule doesn't work.) *)
 
-(* FILL IN HERE *)
+Theorem hoare_asgn_wrong :
+  ~forall X a,
+      {{ fun st => True }}
+      (X ::= a)
+      {{ fun st => st X = aeval st a }}.
+Proof.
+  unfold hoare_triple, not.
+  intros.
+  specialize H with X (APlus (AId X) (ANum 1)) (t_empty 0) (t_update (t_empty 0) X 1).
+  assert (t_update (t_empty 0) X 1 X =
+          aeval (t_update (t_empty 0) X 1) (APlus (AId X) (ANum 1))) as Hup.
+  apply H; auto using E_Ass.
+  inversion Hup.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (hoare_asgn_fwd)  *)
-(** However, by using an auxiliary variable [m] to remember the 
-    original value of [X] we can define a Hoare rule for assignment 
+(** However, by using an auxiliary variable [m] to remember the
+    original value of [X] we can define a Hoare rule for assignment
     that does, intuitively, "work forwards" rather than backwards.
 
        ------------------------------------------ (hoare_asgn_fwd)
@@ -494,7 +521,7 @@ Theorem hoare_asgn_fwd :
   forall m a P,
   {{fun st => P st /\ st X = m}}
     X ::= a
-  {{fun st => P (t_update st X m) 
+  {{fun st => P (t_update st X m)
             /\ st X = aeval (t_update st X m) a }}.
 Proof.
   intros functional_extensionality m a P.
@@ -753,8 +780,8 @@ Qed.
        {{ X + 1 <= 5 }}  X ::= X + 1  {{ X <= 5 }}
        {{ 0 <= 3 /\ 3 <= 5 }}  X ::= 3  {{ 0 <= X /\ X <= 5 }}
 
-   ...into formal statements (name them [assn_sub_ex1'] and 
-   [assn_sub_ex2']) and use [hoare_asgn] and [hoare_consequence_pre] 
+   ...into formal statements (name them [assn_sub_ex1'] and
+   [assn_sub_ex2']) and use [hoare_asgn] and [hoare_consequence_pre]
    to prove them. *)
 
 (* FILL IN HERE *)
@@ -836,7 +863,7 @@ Proof.
     apply hoare_skip.
   - (* left part of seq *)
     eapply hoare_consequence_pre. apply hoare_asgn.
-    intros st H. subst. reflexivity. 
+    intros st H. subst. reflexivity.
 Qed.
 
 (** We typically use [hoare_seq] in conjunction with
@@ -899,10 +926,10 @@ Proof.
 (** ** Conditionals *)
 
 (** What sort of rule do we want for reasoning about conditional
-    commands?  
+    commands?
 
-    Certainly, if the same assertion [Q] holds after executing 
-    either of the branches, then it holds after the whole conditional.  
+    Certainly, if the same assertion [Q] holds after executing
+    either of the branches, then it holds after the whole conditional.
     So we might be tempted to write:
 
               {{P}} c1 {{Q}}
@@ -911,7 +938,7 @@ Proof.
       {{P}} IFB b THEN c1 ELSE c2 {{Q}}
 
    However, this is rather weak. For example, using this rule,
-   we cannot show 
+   we cannot show
 
      {{ True }}
      IFB X == 0
@@ -1540,4 +1567,3 @@ End Himp.
 (** [] *)
 
 (** $Date: 2016-05-26 16:17:19 -0400 (Thu, 26 May 2016) $ *)
-
