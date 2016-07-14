@@ -525,7 +525,17 @@ Theorem hoare_asgn_fwd :
             /\ st X = aeval (t_update st X m) a }}.
 Proof.
   intros functional_extensionality m a P.
-  (* FILL IN HERE *) Admitted.
+  unfold hoare_triple.
+  intros st st' Hc (Hp1,Hp2).
+  inversion Hc.
+  subst.
+  split.
+  rewrite t_update_shadow; rewrite t_update_same; assumption.
+  SearchAbout t_update.
+  rewrite t_update_eq.
+  rewrite t_update_shadow.
+  rewrite t_update_same.
+  auto.
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced (hoare_asgn_fwd_exists)  *)
