@@ -515,16 +515,13 @@ Qed.
     rule is more complicated than [hoare_asgn].
 *)
 
-Theorem hoare_asgn_fwd :
-  (forall {X Y: Type} {f g : X -> Y},
-     (forall (x: X), f x = g x) ->  f = g) ->
-  forall m a P,
+Theorem hoare_asgn_fwd : forall m a P,
   {{fun st => P st /\ st X = m}}
     X ::= a
   {{fun st => P (t_update st X m)
-            /\ st X = aeval (t_update st X m) a }}.
+           /\ st X = aeval (t_update st X m) a }}.
 Proof.
-  intros functional_extensionality m a P.
+  intros m a P.
   unfold hoare_triple.
   intros st st' Hc (Hp1,Hp2).
   inversion Hc. subst. clear Hc.
@@ -547,17 +544,18 @@ Qed.
 
 *)
 
-Theorem hoare_asgn_fwd_exists :
-  (forall {X Y: Type} {f g : X -> Y},
-     (forall (x: X), f x = g x) ->  f = g) ->
-  forall a P,
+Theorem hoare_asgn_fwd_exists : forall a P,
   {{fun st => P st}}
     X ::= a
   {{fun st => exists m, P (t_update st X m) /\
                 st X = aeval (t_update st X m) a }}.
 Proof.
-  intros functional_extensionality a P.
-  (* FILL IN HERE *) Admitted.
+  intros a P.
+  unfold hoare_triple.
+  intros st st' Hc Hp. exists (st X).
+  inversion Hc. subst. clear Hc.
+  split; rewrite ?t_update_eq, t_update_shadow, t_update_same; auto.
+Qed.
 (** [] *)
 
 (* ####################################################### *)
