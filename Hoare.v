@@ -525,9 +525,7 @@ Proof.
   unfold hoare_triple.
   intros st st' Hc (Hp1,Hp2).
   inversion Hc. subst. clear Hc.
-  split.
-  rewrite t_update_shadow, t_update_same; auto.
-  rewrite t_update_eq, t_update_shadow, t_update_same; auto.
+  split; rewrite ?t_update_eq, t_update_shadow, t_update_same; auto.
 Qed.
 (** [] *)
 
