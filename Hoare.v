@@ -527,15 +527,11 @@ Proof.
   intros functional_extensionality m a P.
   unfold hoare_triple.
   intros st st' Hc (Hp1,Hp2).
-  inversion Hc.
-  subst.
+  inversion Hc. subst. clear Hc.
   split.
-  rewrite t_update_shadow; rewrite t_update_same; assumption.
-  SearchAbout t_update.
-  rewrite t_update_eq.
-  rewrite t_update_shadow.
-  rewrite t_update_same.
-  auto.
+  rewrite t_update_shadow, t_update_same; auto.
+  rewrite t_update_eq, t_update_shadow, t_update_same; auto.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced (hoare_asgn_fwd_exists)  *)
