@@ -1091,7 +1091,17 @@ Theorem if_minus_plus :
   FI
   {{fun st => st Y = st X + st Z}}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply hoare_if.
+
+  eapply hoare_consequence_pre. apply hoare_asgn.
+  unfold bassn, assn_sub, t_update. simpl.
+  intros st [_ H]; rewrite Nat.leb_le in H; omega.
+
+  eapply hoare_consequence_pre. apply hoare_asgn.
+  unfold bassn, assn_sub, t_update. simpl.
+  intros st [_ H]; rewrite Nat.leb_le in H; omega.
+Qed.
+(** [] *)
 
 (* ####################################################### *)
 (** *** Exercise: One-sided conditionals *)
@@ -1153,6 +1163,12 @@ Inductive ceval : com -> state -> state -> Prop :=
   | E_IfFalse : forall (st st' : state) (b1 : bexp) (c1 c2 : com),
                 beval st b1 = false ->
                 c2 / st \\ st' -> (IFB b1 THEN c1 ELSE c2 FI) / st \\ st'
+  | E_If1True : forall (st st' : state) (b : bexp) (c : com),
+      beval st b = true ->
+      c / st \\ st' -> (IF1 b THEN c FI) / st \\ st'
+  | E_If1False : forall (st : state) (b : bexp) (c : com),
+      beval st b = false ->
+      (IF1 b THEN c FI) / st \\ st
   | E_WhileEnd : forall (b1 : bexp) (st : state) (c1 : com),
                  beval st b1 = false -> (WHILE b1 DO c1 END) / st \\ st
   | E_WhileLoop : forall (st st' st'' : state) (b1 : bexp) (c1 : com),
@@ -1160,8 +1176,6 @@ Inductive ceval : com -> state -> state -> Prop :=
                   c1 / st \\ st' ->
                   (WHILE b1 DO c1 END) / st' \\ st'' ->
                   (WHILE b1 DO c1 END) / st \\ st''
-(* FILL IN HERE *)
-
   where "c1 '/' st '\\' st'" := (ceval c1 st st').
 
 (** Now we repeat (verbatim) the definition and notation of Hoare triples. *)
@@ -1181,7 +1195,16 @@ Notation "{{ P }}  c  {{ Q }}" := (hoare_triple P c Q)
     for one-sided conditionals. Try to come up with a rule that is
     both sound and as precise as possible. *)
 
-(* FILL IN HERE *)
+Theorem hoare_if1 : forall P Q b c,
+  {{fun st => P st /\ bassn b st}} c {{Q}} ->
+  (fun st => P st /\ ~bassn b st) ->> Q ->
+  {{P}} (IF1 b THEN c FI) {{Q}}.
+Proof.
+  intros P Q b c HTrue HFalse st st' Hc HP.
+  inversion Hc; subst.
+  apply (HTrue st st'); auto.
+  apply (HFalse st'); auto using bexp_eval_false.
+Qed.
 
 (** For full credit, prove formally [hoare_if1_good] that your rule is
     precise enough to show the following valid Hoare triple:
@@ -1198,13 +1221,41 @@ Notation "{{ P }}  c  {{ Q }}" := (hoare_triple P c Q)
     rules also. Because we're working in a separate module, you'll
     need to copy here the rules you find necessary. *)
 
+Theorem hoare_asgn : forall Q X a,
+  {{Q [X |-> a]}} (X ::= a) {{Q}}.
+Proof.
+  unfold hoare_triple.
+  intros Q X a st st' HE HQ.
+  inversion HE. subst.
+  unfold assn_sub in HQ. assumption. Qed.
+
+Theorem hoare_consequence_pre : forall (P P' Q : Assertion) c,
+  {{P'}} c {{Q}} ->
+  P ->> P' ->
+  {{P}} c {{Q}}.
+Proof.
+  intros P P' Q c Hhoare Himp.
+  intros st st' Hc HP. apply (Hhoare st st').
+  assumption. apply Himp. assumption. Qed.
+
 Lemma hoare_if1_good :
   {{ fun st => st X + st Y = st Z }}
   IF1 BNot (BEq (AId Y) (ANum 0)) THEN
     X ::= APlus (AId X) (AId Y)
   FI
   {{ fun st => st X = st Z }}.
-Proof. (* FILL IN HERE *) Admitted.
+Proof.
+  apply hoare_if1.
+  (* Y <> 0 *)
+  eapply hoare_consequence_pre.
+  apply hoare_asgn.
+  unfold bassn, assn_sub, t_update; simpl. intros st [H1 H2]. assumption.
+  (* Y = 0 *)
+  unfold bassn, assn_sub, t_update; simpl. intros st [H1 H2].
+  apply eq_true_negb_classical in H2.
+  apply beq_nat_true in H2.
+  omega.
+Qed.
 
 End If1.
 (** [] *)
