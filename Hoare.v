@@ -929,14 +929,23 @@ Qed.
 *)
 
 Definition swap_program : com :=
-  (* FILL IN HERE *) admit.
+  Z ::= AId X ;; X ::= AId Y ;; Y ::= AId Z.
 
 Theorem swap_exercise :
-  {{fun st => st X <= st Y}}
+  {{ fun st => st X <= st Y }}
   swap_program
-  {{fun st => st Y <= st X}}.
+  {{ fun st => st Y <= st X }}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold swap_program.
+  eapply hoare_seq.
+  eapply hoare_seq.
+  apply hoare_asgn.
+  apply hoare_asgn.
+  eapply hoare_consequence_pre.
+  apply hoare_asgn.
+  intros st H.
+  unfold assn_sub, t_update; auto.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars (hoarestate1)  *)
@@ -949,7 +958,8 @@ Proof.
 
 *)
 
-(* FILL IN HERE *)
+(* ANSWER: Because expr a might involve X and X might not be bound to
+3 in the initial state. *)
 (** [] *)
 
 (* ####################################################### *)
