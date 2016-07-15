@@ -786,7 +786,29 @@ Qed.
    [assn_sub_ex2']) and use [hoare_asgn] and [hoare_consequence_pre]
    to prove them. *)
 
-(* FILL IN HERE *)
+Example assn_sub_ex1' :
+  {{ fun st => st X + 1 <= 5 }}
+  X ::= APlus (AId X) (ANum 1)
+  {{ fun st => st X <= 5 }}.
+Proof.
+  eapply hoare_consequence_pre.
+  apply hoare_asgn.
+  intros st H.
+  unfold assn_sub. simpl. rewrite t_update_eq.
+  assumption.
+Qed.
+
+Example assn_sub_ex2' :
+  {{ fun st => 0 <= 3 /\ 3 <= 5 }}
+  X ::= ANum 3
+  {{ fun st => 0 <= st X /\ st X <= 5 }}.
+Proof.
+  eapply hoare_consequence_pre.
+  apply hoare_asgn.
+  intros st H.
+  unfold assn_sub. simpl. rewrite t_update_eq.
+  assumption.
+Qed.
 (** [] *)
 
 (* ####################################################### *)
@@ -889,7 +911,13 @@ Example hoare_asgn_example4 :
   {{fun st => True}} (X ::= (ANum 1);; Y ::= (ANum 2))
   {{fun st => st X = 1 /\ st Y = 2}}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply hoare_seq.
+  apply hoare_asgn.
+  eapply hoare_consequence_pre.
+  apply hoare_asgn.
+  intros st H. unfold assn_sub. simpl.
+  split; unfold t_update; reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars (swap_exercise)  *)
