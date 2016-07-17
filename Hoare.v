@@ -1249,7 +1249,8 @@ Proof.
   (* Y <> 0 *)
   eapply hoare_consequence_pre.
   apply hoare_asgn.
-  unfold bassn, assn_sub, t_update; simpl. intros st [H1 H2]. assumption.
+  unfold bassn, assn_sub, t_update; simpl. intros st [H1 _].
+  assumption.
   (* Y = 0 *)
   unfold bassn, assn_sub, t_update; simpl. intros st [H1 H2].
   apply eq_true_negb_classical in H2.
