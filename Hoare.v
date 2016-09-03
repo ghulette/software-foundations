@@ -1525,34 +1525,44 @@ Proof.
   eapply E_Seq; apply E_Ass; auto.
 Qed.
 
-(* REPEAT c UNTIL b END should be equivalent to c ;; WHILE ~b DO c END *)
+(* "REPEAT c UNTIL b END" should be equivalent to
+   "c ;; WHILE ~b DO c END" *)
 
-Lemma repeat_while :
+Lemma while_unroll :
+  forall b c st st',
+    beval st b = true ->
+    (WHILE b DO c END) / st \\ st' <-> (c ;; WHILE b DO c END) / st \\ st'.
+Proof.
+  intros b c st st'' Hb; split; intro H;
+    inversion H; subst; try congruence.
+  (* -> *) apply E_Seq with st'; assumption.
+  (* <- *) apply E_WhileLoop with st'; assumption.
+Qed.
+
+Lemma repeat_while_equiv :
   forall b c st st',
     REPEAT c UNTIL b END / st \\ st'
     <->
     (c ;; WHILE (BNot b) DO c END) / st \\ st'.
 Proof.
-  split; intros.
+  intros b c st st'; split; intros H.
 
-  inversion H; subst.
-
-  apply E_Seq with st'; auto;
-    apply E_WhileEnd; apply negb_false_iff; auto.
-
-  rename st' into st''.
-  rename st'0 into st'.
+  (* REPEAT -> WHILE *)
   remember (REPEAT c UNTIL b END) as wcom.
   induction H;
     try (inversion Heqwcom); subst; clear Heqwcom.
 
-  apply E_Seq with st'. assumption.
-  apply E_WhileEnd.
-  simpl. rewrite H0. reflexivity.
+  (* b = true *)
+  apply E_Seq with st'; auto.
+  constructor; apply negb_false_iff; auto.
+
+  (* b = false *)
+  apply E_Seq with st'; auto.
+  apply while_unroll; auto.
+  apply negb_true_iff; auto.
+
+  (* WHILE -> REPEAT *)
 Abort.
-
-
-
 
 (** Now state and prove a theorem, [hoare_repeat], that expresses an
     appropriate proof rule for [repeat] commands.  Use [hoare_while]
@@ -1573,8 +1583,7 @@ Proof.
 
   (* E_RepeatLoop *)
   clear IHHe1.
-
-Qed.
+Abort.
 
 (** For full credit, make sure (informally) that your rule can be used
     to prove the following valid Hoare triple:
@@ -1606,6 +1615,7 @@ Proof.
     try (inversion Heqwcom); subst; clear Heqwcom.
 
   clear IHHe H.
+Abort.
 
 
 
