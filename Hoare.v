@@ -1562,7 +1562,15 @@ Proof.
   apply negb_true_iff; auto.
 
   (* WHILE -> REPEAT *)
-Abort.
+  inversion H; subst; clear H.
+  remember (WHILE BNot b DO c END) as wcom.
+  induction H5;
+    try (inversion Heqwcom); subst; clear Heqwcom.
+
+  apply E_RepeatEnd.
+  assumption.
+  simpl in H. apply negb_false_iff in H. assumption.
+  Abort.
 
 (** Now state and prove a theorem, [hoare_repeat], that expresses an
     appropriate proof rule for [repeat] commands.  Use [hoare_while]
