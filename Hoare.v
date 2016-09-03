@@ -1484,8 +1484,15 @@ Inductive ceval : state -> com -> state -> Prop :=
       ceval st c1 st' ->
       ceval st' (WHILE b1 DO c1 END) st'' ->
       ceval st (WHILE b1 DO c1 END) st''
-(* FILL IN HERE *)
-.
+  | E_RepeatEnd : forall b c st st',
+      ceval st c st' ->
+      beval st' b = true ->
+      ceval st (REPEAT c UNTIL b END) st'
+  | E_RepeatLoop : forall b c st st' st'',
+      ceval st c st' ->
+      beval st' b = false ->
+      ceval st' (REPEAT c UNTIL b END) st'' ->
+      ceval st (REPEAT c UNTIL b END) st''.
 
 (** A couple of definitions from above, copied here so they use the
     new [ceval]. *)
@@ -1513,13 +1520,61 @@ Theorem ex1_repeat_works :
   ex1_repeat / empty_state \\
                t_update (t_update empty_state X 1) Y 1.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold ex1_repeat.
+  constructor; auto.
+  eapply E_Seq; apply E_Ass; auto.
+Qed.
+
+(* REPEAT c UNTIL b END should be equivalent to c ;; WHILE ~b DO c END *)
+
+Lemma repeat_while :
+  forall b c st st',
+    REPEAT c UNTIL b END / st \\ st'
+    <->
+    (c ;; WHILE (BNot b) DO c END) / st \\ st'.
+Proof.
+  split; intros.
+
+  inversion H; subst.
+
+  apply E_Seq with st'; auto;
+    apply E_WhileEnd; apply negb_false_iff; auto.
+
+  rename st' into st''.
+  rename st'0 into st'.
+  remember (REPEAT c UNTIL b END) as wcom.
+  induction H;
+    try (inversion Heqwcom); subst; clear Heqwcom.
+
+  apply E_Seq with st'. assumption.
+  apply E_WhileEnd.
+  simpl. rewrite H0. reflexivity.
+Abort.
+
+
+
 
 (** Now state and prove a theorem, [hoare_repeat], that expresses an
     appropriate proof rule for [repeat] commands.  Use [hoare_while]
     as a model, and try to make your rule as precise as possible. *)
 
-(* FILL IN HERE *)
+Lemma hoare_repeat : forall P Q b c,
+    {{P}} c {{Q}} ->
+    {{fun st => ~bassn b st /\ Q st}} c {{Q}} ->
+    {{P}} REPEAT c UNTIL b END {{fun st => bassn b st /\ Q st}}.
+Proof.
+  intros P Q b c Hc1 Hc2 st st' He HP.
+  remember (REPEAT c UNTIL b END) as wcom eqn:Heqwcom.
+  induction He;
+    try (inversion Heqwcom); subst; clear Heqwcom.
+
+  (* E_RepeatEnd *)
+  split; auto; apply (Hc1 st st'); auto.
+
+  (* E_RepeatLoop *)
+  clear IHHe1.
+
+Qed.
 
 (** For full credit, make sure (informally) that your rule can be used
     to prove the following valid Hoare triple:
@@ -1532,6 +1587,29 @@ Proof.
   {{ X = 0 /\ Y > 0 }}
 
 *)
+
+Definition ex2_repeat :=
+  REPEAT
+    Y ::= AId X;;
+    X ::= AMinus (AId X) (ANum 1)
+  UNTIL BEq (AId X) (ANum 0) END.
+
+Lemma ex2_repeat_works :
+  {{ fun st => st X > 0 }}
+  ex2_repeat
+  {{ fun st => st X = 0 /\ st Y > 0 }}.
+Proof.
+  intros st st' He HP.
+  remember ex2_repeat as wcom eqn:Heqwcom.
+  unfold ex2_repeat in *.
+  induction He;
+    try (inversion Heqwcom); subst; clear Heqwcom.
+
+  clear IHHe H.
+
+
+
+
 
 End RepeatExercise.
 (** [] *)
