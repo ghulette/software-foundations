@@ -1534,22 +1534,29 @@ Lemma while_unroll :
     (WHILE b DO c END) / st \\ st' <-> (c ;; WHILE b DO c END) / st \\ st'.
 Proof.
   intros b c st st'' Hb; split; intro H;
-    inversion H; subst; try congruence.
+    inversion H; subst; clear H; try congruence.
   (* -> *) apply E_Seq with st'; assumption.
   (* <- *) apply E_WhileLoop with st'; assumption.
 Qed.
 
-Lemma repeat_while_equiv :
+Lemma while_skip :
   forall b c st st',
-    REPEAT c UNTIL b END / st \\ st'
-    <->
+    beval st b = false ->
+    (WHILE b DO c END) / st \\ st' -> st = st'.
+Proof.
+  intros b c st st' Hb Hc.
+  inversion Hc; subst; clear Hc; auto.
+  congruence.
+Qed.
+
+Lemma repeat_while :
+  forall b c st st',
+    REPEAT c UNTIL b END / st \\ st' ->
     (c ;; WHILE (BNot b) DO c END) / st \\ st'.
 Proof.
-  intros b c st st'; split; intros H.
-
-  (* REPEAT -> WHILE *)
+  intros b c st st' Hc.
   remember (REPEAT c UNTIL b END) as wcom.
-  induction H;
+  induction Hc;
     try (inversion Heqwcom); subst; clear Heqwcom.
 
   (* b = true *)
@@ -1560,17 +1567,17 @@ Proof.
   apply E_Seq with st'; auto.
   apply while_unroll; auto.
   apply negb_true_iff; auto.
+Qed.
 
-  (* WHILE -> REPEAT *)
-  inversion H; subst; clear H.
-  remember (WHILE BNot b DO c END) as wcom.
-  induction H5;
-    try (inversion Heqwcom); subst; clear Heqwcom.
+Lemma while_repeat :
+  forall b c st st',
+    (c ;; WHILE (BNot b) DO c END) / st \\ st' ->
+    REPEAT c UNTIL b END / st \\ st'.
+Proof.
+  intros b c st st'' Hc.
+  inversion Hc; subst; clear Hc.
+Abort.
 
-  apply E_RepeatEnd.
-  assumption.
-  simpl in H. apply negb_false_iff in H. assumption.
-  Abort.
 
 (** Now state and prove a theorem, [hoare_repeat], that expresses an
     appropriate proof rule for [repeat] commands.  Use [hoare_while]
