@@ -1539,16 +1539,6 @@ Proof.
   (* <- *) apply E_WhileLoop with st'; assumption.
 Qed.
 
-Lemma while_skip :
-  forall b c st st',
-    beval st b = false ->
-    (WHILE b DO c END) / st \\ st' -> st = st'.
-Proof.
-  intros b c st st' Hb Hc.
-  inversion Hc; subst; clear Hc; auto.
-  congruence.
-Qed.
-
 Lemma repeat_while :
   forall b c st st',
     REPEAT c UNTIL b END / st \\ st' ->
@@ -1561,7 +1551,8 @@ Proof.
 
   (* b = true *)
   apply E_Seq with st'; auto.
-  constructor; apply negb_false_iff; auto.
+  apply E_WhileEnd.
+  apply negb_false_iff; auto.
 
   (* b = false *)
   apply E_Seq with st'; auto.
@@ -1576,7 +1567,31 @@ Lemma while_repeat :
 Proof.
   intros b c st st'' Hc.
   inversion Hc; subst; clear Hc.
-Abort.
+  generalize dependent st.
+
+  remember (WHILE BNot b DO c END) as wcom.
+  induction H4;
+    try (inversion Heqwcom); subst; clear Heqwcom.
+
+  (* b = true *)
+  intros.
+  apply E_RepeatEnd; auto.
+  rewrite <- negb_false_iff; auto.
+
+  (* b = false *)
+  intros.
+  apply E_RepeatLoop with st; auto.
+  rewrite <- negb_true_iff; auto.
+Qed.
+
+Lemma repeat_while_equiv :
+  forall b c st st',
+    (c ;; WHILE (BNot b) DO c END) / st \\ st'
+    <->
+    REPEAT c UNTIL b END / st \\ st'.
+Proof.
+  split; auto using while_repeat, repeat_while.
+Qed.
 
 
 (** Now state and prove a theorem, [hoare_repeat], that expresses an
