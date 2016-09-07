@@ -1871,12 +1871,16 @@ Notation "{{ P }}  c  {{ Q }}" := (hoare_triple P c Q)
     [havoc_pre] and prove that the resulting rule is correct. *)
 
 Definition havoc_pre (X : id) (Q : Assertion) : Assertion :=
-(* FILL IN HERE *) admit.
+  fun st => forall n, (Q [X |-> ANum n]) st.
 
 Theorem hoare_havoc : forall (Q : Assertion) (X : id),
   {{ havoc_pre X Q }} HAVOC X {{ Q }}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold havoc_pre.
+  intros Q X st st' Hc Hpre.
+  inversion Hc; subst; clear Hc.
+  apply (Hpre n).
+Qed.
 
 End Himp.
 (** [] *)
