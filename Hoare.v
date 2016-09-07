@@ -1525,6 +1525,34 @@ Proof.
   eapply E_Seq; apply E_Ass; auto.
 Qed.
 
+Theorem hoare_asgn : forall Q X a,
+  {{Q [X |-> a]}} (X ::= a) {{Q}}.
+Proof.
+  unfold hoare_triple.
+  intros Q X a st st' HE HQ.
+  inversion HE. subst.
+  unfold assn_sub in HQ. assumption. Qed.
+
+Theorem hoare_consequence_pre : forall (P P' Q : Assertion) c,
+  {{P'}} c {{Q}} ->
+  P ->> P' ->
+  {{P}} c {{Q}}.
+Proof.
+  intros P P' Q c Hhoare Himp.
+  intros st st' Hc HP. apply (Hhoare st st').
+  assumption. apply Himp. assumption. Qed.
+
+Theorem hoare_consequence_post : forall (P Q Q' : Assertion) c,
+  {{P}} c {{Q'}} ->
+  Q' ->> Q ->
+  {{P}} c {{Q}}.
+Proof.
+  intros P Q Q' c Hhoare Himp.
+  intros st st' Hc HP.
+  apply Himp.
+  apply (Hhoare st st').
+  assumption. assumption. Qed.
+
 Theorem hoare_seq : forall P Q R c1 c2,
      {{Q}} c2 {{R}} ->
      {{P}} c1 {{Q}} ->
@@ -1535,6 +1563,26 @@ Proof.
   apply (H1 st'0 st'); auto.
   apply (H2 st st'0); auto.
 Qed.
+
+Lemma hoare_while : forall P b c,
+  {{fun st => P st /\ bassn b st}} c {{P}} ->
+  {{P}} WHILE b DO c END {{fun st => P st /\ ~ (bassn b st)}}.
+Proof.
+  intros P b c Hhoare st st' He HP.
+  (* Like we've seen before, we need to reason by induction
+     on [He], because, in the "keep looping" case, its hypotheses
+     talk about the whole loop instead of just [c]. *)
+  remember (WHILE b DO c END) as wcom eqn:Heqwcom.
+  induction He;
+    try (inversion Heqwcom); subst; clear Heqwcom.
+  - (* E_WhileEnd *)
+    split. assumption. apply bexp_eval_false. assumption.
+  - (* E_WhileLoop *)
+    apply IHHe2. reflexivity.
+    apply (Hhoare st st'). assumption.
+      split. assumption. apply bexp_eval_true. assumption.
+Qed.
+
 
 (* "REPEAT c UNTIL b END" should be equivalent to
    "c ;; WHILE ~b DO c END" *)
@@ -1553,7 +1601,7 @@ Qed.
 Lemma repeat_while :
   forall b c st st',
     REPEAT c UNTIL b END / st \\ st' ->
-    (c ;; WHILE (BNot b) DO c END) / st \\ st'.
+    (c ;; WHILE BNot b DO c END) / st \\ st'.
 Proof.
   intros b c st st' Hc.
   remember (REPEAT c UNTIL b END) as wcom.
@@ -1573,7 +1621,7 @@ Qed.
 
 Lemma while_repeat :
   forall b c st st',
-    (c ;; WHILE (BNot b) DO c END) / st \\ st' ->
+    (c ;; WHILE BNot b DO c END) / st \\ st' ->
     REPEAT c UNTIL b END / st \\ st'.
 Proof.
   intros b c st st'' Hc.
@@ -1620,24 +1668,41 @@ Proof.
   rewrite <- Hceq; auto.
 Qed.
 
+Lemma bassn_neg_not :
+  forall st b, ~bassn b st <-> bassn (BNot b) st.
+Proof.
+  unfold bassn; intros st b; simpl.
+  destruct (beval st b); firstorder.
+Qed.
+
+Lemma bassn_dbl_neg :
+  forall b st, ~bassn (BNot b) st <-> bassn b st.
+Proof.
+  unfold bassn; intros b st; simpl.
+  destruct (beval st b); firstorder.
+Qed.
+
 (** Now state and prove a theorem, [hoare_repeat], that expresses an
     appropriate proof rule for [repeat] commands.  Use [hoare_while]
     as a model, and try to make your rule as precise as possible. *)
 
 Lemma hoare_repeat : forall P Q b c,
     {{P}} c {{Q}} ->
-    {{fun st => ~bassn b st /\ Q st}} c {{Q}} ->
-    {{P}} REPEAT c UNTIL b END {{fun st => bassn b st /\ Q st}}.
+    {{fun st => Q st /\ ~bassn b st}} c {{Q}} ->
+    {{P}} REPEAT c UNTIL b END {{fun st => Q st /\ bassn b st}}.
 Proof.
   intros P Q b c Hc1 Hc2.
   assert (hoare_equiv (REPEAT c UNTIL b END) (c ;; WHILE BNot b DO c END)) as Heq.
-  apply cequiv_hoare_equiv.
-  apply repeat_while_equiv.
+    apply cequiv_hoare_equiv; apply repeat_while_equiv.
+  rewrite (Heq P (fun st => Q st /\ bassn b st)); clear Heq.
+  apply hoare_seq with Q; auto.
+  apply hoare_consequence_post with (fun st => Q st /\ ~bassn (BNot b) st).
+  apply hoare_while.
+  apply hoare_consequence_pre with (fun st => Q st /\ ~bassn b st); auto.
+  intros st; rewrite bassn_neg_not; auto.
+  intros st; rewrite bassn_dbl_neg; auto.
+Qed.
 
-  rewrite (Heq P (fun st => bassn b st /\ Q st)).
-
-  Check hoare_seq.
-  Check hoare_while.
 (** For full credit, make sure (informally) that your rule can be used
     to prove the following valid Hoare triple:
 
@@ -1661,13 +1726,12 @@ Lemma ex2_repeat_works :
   ex2_repeat
   {{ fun st => st X = 0 /\ st Y > 0 }}.
 Proof.
-  intros st st' He HP.
-  remember ex2_repeat as wcom eqn:Heqwcom.
-  unfold ex2_repeat in *.
-  induction He;
-    try (inversion Heqwcom); subst; clear Heqwcom.
-
-  clear IHHe H.
+  unfold ex2_repeat.
+  apply hoare_consequence_post with
+  (fun st => st Y > 0 /\ bassn (BEq (AId X) (ANum 0)) st).
+  apply hoare_repeat.
+  eapply hoare_seq.
+  apply hoare_asgn.
 Abort.
 
 
