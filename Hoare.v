@@ -1525,6 +1525,8 @@ Proof.
   eapply E_Seq; apply E_Ass; auto.
 Qed.
 
+(* Import the Hoare rules *)
+
 Theorem hoare_asgn : forall Q X a,
   {{Q [X |-> a]}} (X ::= a) {{Q}}.
 Proof.
@@ -1730,13 +1732,29 @@ Proof.
   apply hoare_consequence_post with
   (fun st => st Y > 0 /\ bassn (BEq (AId X) (ANum 0)) st).
   apply hoare_repeat.
+
   eapply hoare_seq.
   apply hoare_asgn.
-Abort.
+  eapply hoare_consequence_pre.
+  apply hoare_asgn.
+  firstorder.
 
+  eapply hoare_seq.
+  apply hoare_asgn.
+  eapply hoare_consequence_pre.
+  apply hoare_asgn.
 
+  unfold bassn, assn_sub, t_update.
+  simpl; intros st (HY,HX).
+  apply not_true_is_false in HX.
+  apply beq_nat_false in HX.
+  firstorder.
 
-
+  unfold bassn, assn_sub, t_update.
+  simpl; intros st (HY,HX).
+  apply beq_nat_true in HX.
+  firstorder.
+Qed.
 
 End RepeatExercise.
 (** [] *)
