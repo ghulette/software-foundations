@@ -1525,6 +1525,17 @@ Proof.
   eapply E_Seq; apply E_Ass; auto.
 Qed.
 
+Theorem hoare_seq : forall P Q R c1 c2,
+     {{Q}} c2 {{R}} ->
+     {{P}} c1 {{Q}} ->
+     {{P}} c1;;c2 {{R}}.
+Proof.
+  intros P Q R c1 c2 H1 H2 st st' H12 Pre.
+  inversion H12; subst.
+  apply (H1 st'0 st'); auto.
+  apply (H2 st st'0); auto.
+Qed.
+
 (* "REPEAT c UNTIL b END" should be equivalent to
    "c ;; WHILE ~b DO c END" *)
 
@@ -1586,13 +1597,28 @@ Qed.
 
 Lemma repeat_while_equiv :
   forall b c st st',
-    (c ;; WHILE (BNot b) DO c END) / st \\ st'
+    REPEAT c UNTIL b END / st \\ st'
     <->
-    REPEAT c UNTIL b END / st \\ st'.
+    (c ;; WHILE (BNot b) DO c END) / st \\ st'.
 Proof.
   split; auto using while_repeat, repeat_while.
 Qed.
 
+Definition hoare_equiv c1 c2 :=
+  forall P Q,
+    {{ P }} c1 {{ Q }} <-> {{ P }} c2 {{ Q }}.
+
+Lemma cequiv_hoare_equiv:
+  forall c1 c2,
+    (forall st st', c1 / st \\ st' <-> c2 / st \\ st') ->
+    hoare_equiv c1 c2.
+Proof.
+  intros c1 c2 Hceq P Q.
+  unfold hoare_triple.
+  split; intros H st st' Hc HP; apply (H st st'); auto.
+  rewrite -> Hceq; auto.
+  rewrite <- Hceq; auto.
+Qed.
 
 (** Now state and prove a theorem, [hoare_repeat], that expresses an
     appropriate proof rule for [repeat] commands.  Use [hoare_while]
@@ -1603,18 +1629,15 @@ Lemma hoare_repeat : forall P Q b c,
     {{fun st => ~bassn b st /\ Q st}} c {{Q}} ->
     {{P}} REPEAT c UNTIL b END {{fun st => bassn b st /\ Q st}}.
 Proof.
-  intros P Q b c Hc1 Hc2 st st' He HP.
-  remember (REPEAT c UNTIL b END) as wcom eqn:Heqwcom.
-  induction He;
-    try (inversion Heqwcom); subst; clear Heqwcom.
+  intros P Q b c Hc1 Hc2.
+  assert (hoare_equiv (REPEAT c UNTIL b END) (c ;; WHILE BNot b DO c END)) as Heq.
+  apply cequiv_hoare_equiv.
+  apply repeat_while_equiv.
 
-  (* E_RepeatEnd *)
-  split; auto; apply (Hc1 st st'); auto.
+  rewrite (Heq P (fun st => bassn b st /\ Q st)).
 
-  (* E_RepeatLoop *)
-  clear IHHe1.
-Abort.
-
+  Check hoare_seq.
+  Check hoare_while.
 (** For full credit, make sure (informally) that your rule can be used
     to prove the following valid Hoare triple:
 
