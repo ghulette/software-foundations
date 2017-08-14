@@ -180,10 +180,11 @@ Print ev_4'''.
 
 Theorem ev_8 : ev 8.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  repeat apply ev_SS; constructor.
+Qed.
 
 Definition ev_8' : ev 8 :=
-  (* FILL IN HERE *) admit.
+  ev_SS 6 (ev_SS 4 ev_4).
 (** [] *)
 
 (* ##################################################### *)
@@ -338,7 +339,13 @@ Definition and_comm' P Q : P /\ Q <-> Q /\ P :=
 (** Construct a proof object demonstrating the following proposition. *)
 
 Definition conj_fact : forall P Q R, P /\ Q -> Q /\ R -> P /\ R :=
-  (* FILL IN HERE *) admit.
+  fun P Q R HPQ HQR =>
+    match HPQ with
+    | conj HP _ =>
+      match HQR with
+      | conj _ HR => conj HP HR
+      end
+    end.
 (** [] *)
 
 (** ** Disjunction
@@ -366,7 +373,11 @@ End Or.
     using [Print] to peek at the ones we already defined!). *)
 
 Definition or_comm : forall P Q, P \/ Q -> Q \/ P :=
-  (* FILL IN HERE *) admit.
+  fun P Q HPQ =>
+    match HPQ with
+    | or_introl HP => or_intror HP
+    | or_intror HQ => or_introl HQ
+    end.
 (** [] *)
 
 (** ** Existential Quantification
@@ -405,8 +416,9 @@ Definition some_nat_is_even : exists n, ev n :=
 (** Complete the definition of the following proof object: *)
 
 Definition ex_ev_Sn : ex (fun n => ev (S n)) :=
-(* FILL IN HERE *) admit.
+  ex_intro _ 1 (ev_SS _ ev_0).
 (** [] *)
+
 
 (** ** [True] and [False] *)
 
@@ -498,7 +510,9 @@ Notation "x = y" := (eq x y)
 Lemma leibniz_equality : forall (X : Type) (x y: X),
   x = y -> forall P:X->Prop, P x -> P y.
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros A x y H P Hx.
+  induction H; auto.
+Qed.
 (** [] *)
 
 (** We can use [eq_refl] to construct evidence that, for example, [2 =
@@ -588,4 +602,3 @@ Definition quiz6 : exists x,  x + 3 = 4
    context. *)
 
 (** $Date: 2016-05-26 16:17:19 -0400 (Thu, 26 May 2016) $ *)
-

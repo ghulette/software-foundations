@@ -34,9 +34,9 @@ Require Import Coq.Bool.Bool.
 Require Import Coq.Logic.FunctionalExtensionality.
 
 (** Documentation for the standard library can be found at
-    http://coq.inria.fr/library/.  
+    http://coq.inria.fr/library/.
 
-    The [SearchAbout] command is a good way to look for theorems 
+    The [SearchAbout] command is a good way to look for theorems
     involving objects of specific types. *)
 
 (* ###################################################################### *)
@@ -175,7 +175,11 @@ Proof. reflexivity. Qed.
 Lemma t_update_eq : forall A (m: total_map A) x v,
   (t_update m x v) x = v.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold t_update.
+  intros A m x v.
+  rewrite <- beq_id_refl.
+  reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, optional (t_update_neq)  *)
@@ -188,7 +192,13 @@ Theorem t_update_neq : forall (X:Type) v x1 x2
   x1 <> x2 ->
   (t_update m x1 v) x2 = m x2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold t_update.
+  intros A v x1 x2 m H.
+  replace (beq_id x1 x2) with false.
+  reflexivity.
+  symmetry.
+  rewrite beq_id_false_iff; auto.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, optional (t_update_shadow)  *)
@@ -202,7 +212,12 @@ Lemma t_update_shadow : forall A (m: total_map A) v1 v2 x,
     t_update (t_update m x v1) x v2
   = t_update m x v2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold t_update.
+  intros A m v1 v2 x.
+  apply functional_extensionality.
+  intros x'.
+  destruct (beq_id x x'); reflexivity.
+Qed.
 (** [] *)
 
 (** For the final two lemmas about total maps, it's convenient to use
@@ -216,7 +231,11 @@ Proof.
 
 Lemma beq_idP : forall x y, reflect (x = y) (beq_id x y).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  apply iff_reflect.
+  symmetry.
+  apply beq_id_true_iff.
+Qed.
 (** [] *)
 
 (** Now, given [id]s [x1] and [x2], we can use the [destruct (beq_idP
@@ -233,7 +252,12 @@ Proof.
 Theorem t_update_same : forall X x (m : total_map X),
   t_update m x (m x) = m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold t_update.
+  intros A x m.
+  apply functional_extensionality.
+  intros x'.
+  destruct (beq_idP x x'); subst; auto.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, recommended (t_update_permute)  *)
@@ -247,7 +271,13 @@ Theorem t_update_permute : forall (X:Type) v1 v2 x1 x2
     (t_update (t_update m x2 v2) x1 v1)
   = (t_update (t_update m x1 v1) x2 v2).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold t_update.
+  intros A v1 v2 x1 x2 m Hx.
+  apply functional_extensionality.
+  intros y.
+  destruct (beq_idP x1 y); destruct (beq_idP x2 y); subst; auto.
+  apply except; apply Hx; reflexivity.
+Qed.
 (** [] *)
 
 (* ###################################################################### *)
@@ -311,4 +341,3 @@ Proof.
 Qed.
 
 (** $Date: 2015-12-11 17:17:29 -0500 (Fri, 11 Dec 2015) $ *)
-
