@@ -61,7 +61,13 @@ Proof.
 Theorem plus_one_r' : forall n:nat,
   n + 1 = S n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply nat_ind.
+  reflexivity.
+  intros n Hn.
+  simpl.
+  rewrite Hn.
+  reflexivity.
+Qed.
 (** [] *)
 
 (** Coq generates induction principles for every datatype defined with
@@ -105,6 +111,12 @@ Inductive rgb : Type :=
   | red : rgb
   | green : rgb
   | blue : rgb.
+
+(* rgb_ind : forall P : rgb -> Prop,
+                    P red  ->
+                    P green ->
+                    P blue ->
+                    forall c : rgb, P c *)
 Check rgb_ind.
 (** [] *)
 
@@ -133,6 +145,12 @@ Inductive natlist1 : Type :=
   | nsnoc1 : natlist1 -> nat -> natlist1.
 
 (** Now what will the induction principle look like? *)
+(* natlist1_ind :
+      forall P : natlist -> Prop,
+         P nnil  ->
+         (forall (l : natlist) (n : nat),
+            P l -> P (ncons l n)) ->
+         forall n : natlist1, P n *)
 (** [] *)
 
 (** From these examples, we can extract this general rule:
@@ -174,8 +192,10 @@ Inductive byntree : Type :=
     Give an [Inductive] definition of [ExSet]: *)
 
 Inductive ExSet : Type :=
-  (* FILL IN HERE *)
-.
+| con1 : bool -> ExSet
+| con2 : nat -> ExSet -> ExSet.
+
+Check ExSet_ind.
 (** [] *)
 
 (** * Polymorphism *)
@@ -229,7 +249,12 @@ Check tree_ind.
                forall n : nat, P (constr3 X m n)) ->
             forall m : mytype X, P m
 
-*) 
+ *)
+Inductive mytype (X:Type) :=
+| constr1 : X -> mytype X
+| constr2 : nat -> mytype X
+| constr3 : mytype X -> nat -> mytype X.
+Check mytype_ind.
 (** [] *)
 
 (** **** Exercise: 1 star, optional (foo)  *)
@@ -244,7 +269,12 @@ Check tree_ind.
                (forall n : nat, P (f1 n)) -> P (quux X Y f1)) ->
              forall f2 : foo X Y, P f2
 
-*) 
+ *)
+Inductive foo (X Y : Type) :=
+| bar : X -> foo X Y
+| baz : Y -> foo X Y
+| quux : (nat -> foo X Y) -> foo X Y.
+Check foo_ind.
 (** [] *)
 
 (** **** Exercise: 1 star, optional (foo')  *)
