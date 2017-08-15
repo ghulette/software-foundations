@@ -716,7 +716,19 @@ Theorem CSeq_congruence : forall c1 c1' c2 c2',
   cequiv c1 c1' -> cequiv c2 c2' ->
   cequiv (c1;;c2) (c1';;c2').
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros c1 c1' c2 c2' Hc1 Hc2.
+  split; intros Hce.
+
+  inversion Hce; subst; clear Hce.
+  apply E_Seq with st'0.
+  unfold cequiv in Hc1; rewrite <- Hc1; assumption.
+  unfold cequiv in Hc2; rewrite <- Hc2; assumption.
+
+  inversion Hce; subst; clear Hce.
+  apply E_Seq with st'0.
+  unfold cequiv in Hc1; rewrite Hc1; assumption.
+  unfold cequiv in Hc2; rewrite Hc2; assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars (CIf_congruence)  *)
@@ -725,7 +737,26 @@ Theorem CIf_congruence : forall b b' c1 c1' c2 c2',
   cequiv (IFB b THEN c1 ELSE c2 FI)
          (IFB b' THEN c1' ELSE c2' FI).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b b' c1 c1' c2 c2' Hbe Hc1e Hc2e.
+  unfold cequiv in *.
+  split; intros Hce.
+
+  inversion Hce; subst; clear Hce.
+  apply E_IfTrue.
+  rewrite <- Hbe; assumption.
+  rewrite <- Hc1e; assumption.
+  apply E_IfFalse.
+  rewrite <- Hbe; assumption.
+  rewrite <- Hc2e; assumption.
+
+  inversion Hce; subst; clear Hce.
+  apply E_IfTrue.
+  rewrite Hbe; assumption.
+  rewrite Hc1e; assumption.
+  apply E_IfFalse.
+  rewrite Hbe; assumption.
+  rewrite Hc2e; assumption.
+Qed.
 (** [] *)
 
 (** For example, here are two equivalent programs and a proof of their
