@@ -1416,7 +1416,19 @@ Proof.
 (** **** Exercise: 3 stars, recommended (XtimesYinZ_spec)  *)
 (** State and prove a specification of [XtimesYinZ]. *)
 
-(* FILL IN HERE *)
+Print XtimesYinZ.
+
+Theorem XtimesYinZ_spec :
+  forall st st' x y,
+    st X = x ->
+    st Y = y ->
+    XtimesYinZ / st \\ st' ->
+    st' Z = x * y.
+Proof.
+  intros st st' x y HX HY Heval.
+  inversion Heval; subst; clear Heval; simpl.
+  apply t_update_eq.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, recommended (loop_never_stops)  *)
@@ -1432,7 +1444,12 @@ Proof.
       contradictory (and so can be solved in one step with
       [inversion]). *)
 
-  (* FILL IN HERE *) Admitted.
+  induction contra;
+    inversion Heqloopdef; subst.
+  inversion H.
+  apply IHcontra2.
+  reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars (no_whilesR)  *)
@@ -1458,13 +1475,34 @@ Fixpoint no_whiles (c : com) : bool :=
     while loops.  Then prove its equivalence with [no_whiles]. *)
 
 Inductive no_whilesR: com -> Prop :=
- (* FILL IN HERE *)
+| E_no_whiles_skip : no_whilesR SKIP
+| E_no_whiles_assign : forall x v, no_whilesR (x ::= v)
+| E_no_whiles_seq : forall c1 c2,
+    no_whilesR c1 -> no_whilesR c2 -> no_whilesR (c1 ;; c2)
+| E_no_whiles_if : forall b c1 c2,
+    no_whilesR c1 -> no_whilesR c2 -> no_whilesR (IFB b THEN c1 ELSE c2 FI)
 .
 
 Theorem no_whiles_eqv:
    forall c, no_whiles c = true <-> no_whilesR c.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intro c.
+  split; intro H.
+
+  induction c.
+  apply E_no_whiles_skip.
+  apply E_no_whiles_assign.
+
+  simpl in H. rewrite andb_true_iff in H.
+  apply E_no_whiles_seq; intuition.
+
+  simpl in H. rewrite andb_true_iff in H.
+  apply E_no_whiles_if; intuition.
+
+  inversion H.
+
+  induction H; auto; simpl; rewrite andb_true_iff; intuition.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars (no_whiles_terminating)  *)
@@ -1472,7 +1510,30 @@ Proof.
     State and prove a theorem [no_whiles_terminating] that says this. *)
 (** Use either [no_whiles] or [no_whilesR], as you prefer. *)
 
-(* FILL IN HERE *)
+Theorem no_whiles_terminating :
+  forall c st,
+    no_whilesR c -> exists st', c / st \\ st'.
+Proof.
+  intros c st Hnw.
+  generalize dependent st.
+  induction Hnw; intro st.
+
+  exists st; constructor.
+  exists (t_update st x (aeval st v)); apply E_Ass; reflexivity.
+
+  specialize IHHnw1 with st.
+  inversion IHHnw1 as (st1,Hst1).
+  specialize IHHnw2 with st1.
+  inversion IHHnw2 as (st2,Hst2).
+  exists st2; apply E_Seq with st1; assumption.
+
+  remember (beval st b) as Hb; destruct Hb.
+  specialize IHHnw1 with st; inversion IHHnw1 as (st',Hst').
+  exists st'; apply E_IfTrue; auto.
+
+  specialize IHHnw2 with st; inversion IHHnw2 as (st',Hst').
+  exists st'; apply E_IfFalse; auto.
+Qed.
 (** [] *)
 
 (* ####################################################### *)
