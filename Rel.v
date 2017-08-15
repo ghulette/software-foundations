@@ -426,13 +426,16 @@ Proof.
   intros X R x y.
   split; intro H.
 
-  inversion H; subst; clear H.
+  induction H.
+  apply rsc_R; assumption.
+  apply rt1n_refl.
+  apply rsc_trans with y; assumption.
 
-  apply rt1n_trans with y.
-  assumption.
-  apply rt1n_refl.
-  apply rt1n_refl.
-Abort.
+  induction H.
+  apply rt_refl.
+  apply rt_trans with y; try assumption.
+  apply rt_step; assumption.
+Qed.
 (** [] *)
 
 (** $Date: 2016-05-26 16:17:19 -0400 (Thu, 26 May 2016) $ *)
