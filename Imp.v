@@ -119,7 +119,7 @@ Inductive bexp : Type :=
          switch freely among them, usually without bothering to say
          which form of BNF they're using because there is no need to:
          a rough-and-ready informal understanding is all that's
-         important. 
+         important.
 
     It's good to be comfortable with both sorts of notations:
     informal ones for communicating between humans and formal ones for
@@ -272,7 +272,7 @@ Lemma foo : forall n, leb 0 n = true.
 Proof.
   intros.
   destruct n.
-    (* Leaves two subgoals, which are discharged 
+    (* Leaves two subgoals, which are discharged
        identically...  *)
     - (* n=0 *) simpl. reflexivity.
     - (* n=Sn' *) simpl. reflexivity.
@@ -284,11 +284,11 @@ Lemma foo' : forall n, leb 0 n = true.
 Proof.
   intros.
   (* [destruct] the current goal *)
-  destruct n; 
+  destruct n;
   (* then [simpl] each resulting subgoal *)
-  simpl; 
+  simpl;
   (* and do [reflexivity] on each resulting subgoal *)
-  reflexivity. 
+  reflexivity.
 Qed.
 
 (** Using [try] and [;] together, we can get rid of the repetition in
@@ -301,7 +301,7 @@ Proof.
   induction a;
     (* Most cases follow directly by the IH... *)
     try (simpl; rewrite IHa1; rewrite IHa2; reflexivity).
-    (* ... but the remaining cases -- ANum and APlus -- 
+    (* ... but the remaining cases -- ANum and APlus --
        are different: *)
   - (* ANum *) reflexivity.
   - (* APlus *)
@@ -328,8 +328,8 @@ Proof.
 
        aeval (optimize_0plus a) = aeval a.
 
-    _Proof_: By induction on [a].  Most cases follow directly from the IH.  
-    The remaining cases are as follows: 
+    _Proof_: By induction on [a].  Most cases follow directly from the IH.
+    The remaining cases are as follows:
 
       - Suppose [a = ANum n] for some [n].  We must show
 
@@ -413,7 +413,7 @@ Proof.
 
 Theorem In10 : In 10 [1;2;3;4;5;6;7;8;9;10].
 Proof.
-  repeat (try (left; reflexivity); right). 
+  repeat (try (left; reflexivity); right).
 Qed.
 (* Print In10. *)
 
@@ -423,8 +423,8 @@ Qed.
 
 Theorem In10' : In 10 [1;2;3;4;5;6;7;8;9;10].
 Proof.
-  repeat (left; reflexivity). 
-  repeat (right; try (left; reflexivity)). 
+  repeat (left; reflexivity).
+  repeat (right; try (left; reflexivity)).
 Qed.
 
 (** The [repeat T] tactic also does not have any upper bound on the
@@ -442,17 +442,31 @@ Qed.
     it is sound.  Use the tacticals we've just seen to make the proof
     as elegant as possible. *)
 
+Print bexp.
+
 Fixpoint optimize_0plus_b (b : bexp) : bexp :=
-  (* FILL IN HERE *) admit.
+  match b with
+  | BTrue => BTrue
+  | BFalse => BFalse
+  | BEq e1 e2 => BEq (optimize_0plus e1) (optimize_0plus e2)
+  | BLe e1 e2 => BLe (optimize_0plus e1) (optimize_0plus e2)
+  | BNot e => BNot (optimize_0plus_b e)
+  | BAnd e1 e2 => BAnd (optimize_0plus_b e1) (optimize_0plus_b e2)
+  end.
 
 Theorem optimize_0plus_b_sound : forall b,
   beval (optimize_0plus_b b) = beval b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b.
+  induction b; simpl;
+    try (repeat rewrite optimize_0plus_sound; reflexivity).
+  rewrite IHb; reflexivity.
+  rewrite IHb1; rewrite IHb2; reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, optional (optimizer)  *)
-(** _Design exercise_: The optimization implemented by our
+ (** _Design exercise_: The optimization implemented by our
     [optimize_0plus] function is only one of many possible
     optimizations on arithmetic and boolean expressions.  Write a more
     sophisticated optimizer and prove it correct.
@@ -562,7 +576,7 @@ Qed.
      - [constructor]: Try to find a constructor [c] (from some
        [Inductive] definition in the current environment) that can be
        applied to solve the current goal.  If one is found, behave
-       like [apply c]. 
+       like [apply c].
 
     We'll see many examples of these in the proofs below. *)
 
@@ -603,7 +617,7 @@ Inductive aevalR : aexp -> nat -> Prop :=
     as the closest approximation in [.v] files.)  *)
 
 Notation "e '\\' n"
-         := (aevalR e n) 
+         := (aevalR e n)
             (at level 50, left associativity)
          : type_scope.
 
@@ -756,10 +770,33 @@ Qed.
 (** Write a relation [bevalR] in the same style as
     [aevalR], and prove that it is equivalent to [beval].*)
 
-(* 
-Inductive bevalR:
-(* FILL IN HERE *)
-*)
+Inductive bevalR : bexp -> bool -> Prop :=
+| E_BTrue : bevalR BTrue true
+| E_BFalse : bevalR BFalse false
+| E_BEq : forall e1 e2 n1 n2,
+    aevalR e1 n1 -> aevalR e2 n2 -> bevalR (BEq e1 e2) (beq_nat n1 n2)
+| E_BLe : forall e1 e2 n1 n2,
+    aevalR e1 n1 -> aevalR e2 n2 -> bevalR (BLe e1 e2) (leb n1 n2)
+| E_BNot : forall e b,
+    bevalR e b -> bevalR (BNot e) (negb b)
+| E_BAnd : forall e1 e2 b1 b2,
+    bevalR e1 b1 -> bevalR e2 b2 -> bevalR (BAnd e1 e2) (andb b1 b2).
+
+Theorem beval_iff_bevalR :
+  forall e b, bevalR e b <-> beval e = b.
+Proof.
+  split.
+
+  intros H.
+  induction H; simpl; subst; try rewrite aeval_iff_aevalR in *; auto.
+
+  generalize dependent b.
+  induction e; intros b H; subst; constructor;
+    try (rewrite aeval_iff_aevalR; reflexivity).
+  apply IHe; reflexivity.
+  apply IHe1; reflexivity.
+  apply IHe2; reflexivity.
+Qed.
 (** [] *)
 
 End AExp.
@@ -977,7 +1014,7 @@ Proof. reflexivity. Qed.
     mechanism.  In particular, we use [IFB] to avoid conflicting with
     the [if] notation from the standard library.)
 
-     c ::= SKIP | x ::= a | c ;; c | IFB b THEN c ELSE c FI 
+     c ::= SKIP | x ::= a | c ;; c | IFB b THEN c ELSE c FI
          | WHILE b DO c END
 
 *)
@@ -1128,7 +1165,7 @@ Fixpoint ceval_fun_no_while (st : state) (c : com)
 
     Thus, because it doesn't terminate on all inputs, the full version
     of [ceval_fun] cannot be written in Coq -- at least not without
-    additional tricks (see chapter [ImpCEvalFun] if you're curious 
+    additional tricks (see chapter [ImpCEvalFun] if you're curious
     about what those might be). *)
 
 (* #################################### *)
@@ -1151,7 +1188,7 @@ Fixpoint ceval_fun_no_while (st : state) (c : com)
     pronounced "[c] takes state [st] to [st']". *)
 
 (** *** Operational Semantics *)
-(** Here is an informal definition of evaluation, presented as inference 
+(** Here is an informal definition of evaluation, presented as inference
     rules for the sake of readability:
 
                            ----------------                            (E_Skip)
@@ -1251,7 +1288,12 @@ Example ceval_example2:
     (X ::= ANum 0;; Y ::= ANum 1;; Z ::= ANum 2) / empty_state \\
     (t_update (t_update (t_update empty_state X 0) Y 1) Z 2).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply E_Seq with (t_update empty_state X 0).
+  apply E_Ass; reflexivity.
+  apply E_Seq with (t_update (t_update empty_state X 0) Y 1).
+  apply E_Ass; reflexivity.
+  apply E_Ass; reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (pup_to_n)  *)
@@ -1261,14 +1303,38 @@ Proof.
    (the latter is trickier than you might expect). *)
 
 Definition pup_to_n : com :=
-  (* FILL IN HERE *) admit.
+  Y ::= ANum 0;;
+  WHILE (BLe (ANum 1) (AId X)) DO
+    Y ::= APlus (AId Y) (AId X);;
+    X ::= AMinus (AId X) (ANum 1)
+  END.
 
 Theorem pup_to_2_ceval :
   pup_to_n / (t_update empty_state X 2) \\
     t_update (t_update (t_update (t_update (t_update (t_update empty_state
       X 2) Y 0) Y 2) X 1) Y 3) X 0.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  remember (t_update (t_update empty_state X 2) Y 0) as st0.
+  remember (t_update st0 Y 2) as st1.
+  remember (t_update st1 X 1) as st2.
+  remember (t_update st2 Y 3) as st3.
+  remember (t_update st3 X 0) as st4.
+  unfold pup_to_n.
+
+  apply E_Seq with st0.
+  subst; apply E_Ass; reflexivity.
+
+  apply E_WhileLoop with st2.
+  subst; reflexivity.
+  apply E_Seq with st1; subst; apply E_Ass; reflexivity.
+
+  apply E_WhileLoop with st4.
+  subst; reflexivity.
+  apply E_Seq with st3; subst; apply E_Ass; reflexivity.
+
+  apply E_WhileEnd.
+  subst; reflexivity.
+Qed.
 (** [] *)
 
 
@@ -1423,7 +1489,7 @@ Proof.
 
       2 3 * 3 4 2 - * +
 
-   and evaluated like this (where we show the program being evaluated 
+   and evaluated like this (where we show the program being evaluated
    on the right and the contents of the stack on the left):
 
       []            |    2 3 * 3 4 2 - * +
@@ -1561,7 +1627,7 @@ Notation "'IFB' c1 'THEN' c2 'ELSE' c3 'FI'" :=
 
     One important point is what to do when there are multiple loops
     enclosing a given [BREAK]. In those cases, [BREAK] should only
-    terminate the _innermost_ loop. Thus, after executing the 
+    terminate the _innermost_ loop. Thus, after executing the
     following...
 
        X ::= 0;;
@@ -1618,7 +1684,7 @@ Reserved Notation "c1 '/' st '\\' s '/' st'"
       and propagate the [SBreak] signal to the surrounding context;
       the resulting state is the same as the one obtained by
       executing [c1] alone. Otherwise, we execute [c2] on the state
-      obtained after executing [c1], and propagate the signal 
+      obtained after executing [c1], and propagate the signal
       generated there.
 
     - Finally, for a loop of the form [WHILE b DO c END], the
@@ -1714,4 +1780,3 @@ End BreakImp.
 (** [] *)
 
 (* $Date: 2016-05-26 16:17:19 -0400 (Thu, 26 May 2016) $ *)
-
