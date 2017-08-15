@@ -545,14 +545,14 @@ Inductive next_even : nat -> nat -> Prop :=
 (** Define an inductive binary relation [total_relation] that holds
     between every pair of natural numbers. *)
 
-(* FILL IN HERE *)
+Inductive total_relation : nat -> nat -> Prop :=
+| total : forall n m, total_relation n m.
 (** [] *)
 
 (** **** Exercise: 2 stars (empty_relation)  *)
 (** Define an inductive binary relation [empty_relation] (on numbers)
     that never holds. *)
-
-(* FILL IN HERE *)
+Inductive empty_relation : nat -> nat -> Prop := .
 (** [] *)
 
 (** **** Exercise: 3 stars, optional (le_exercises)  *)
@@ -735,7 +735,7 @@ End R.
     already seen, and does not seem to offer any concrete benefit over
     them.  To give a better sense of the power of inductive
     definitions, we now show how to use them to model a classic
-    concept in computer science: _regular expressions_. 
+    concept in computer science: _regular expressions_.
 
     Regular expressions are a simple language for describing strings,
     defined as elements of the following inductive type.  (The names
@@ -1197,7 +1197,7 @@ Proof.
     informally, that any sufficiently long string [s] matching a
     regular expression [re] can be "pumped" by repeating some middle
     section of [s] an arbitrary number of times to produce a new
-    string also matching [re]. 
+    string also matching [re].
 
     To begin, we need to define "sufficiently long."  Since we are
     working in a constructive logic, we actually need to be able to
@@ -1542,27 +1542,27 @@ Inductive nostutter {X:Type} : list X -> Prop :=
 
 Example test_nostutter_1: nostutter [3;1;4;1;5;6].
 (* FILL IN HERE *) Admitted.
-(* 
+(*
   Proof. repeat constructor; apply beq_nat_false_iff; auto.
   Qed.
 *)
 
 Example test_nostutter_2:  nostutter (@nil nat).
 (* FILL IN HERE *) Admitted.
-(* 
+(*
   Proof. repeat constructor; apply beq_nat_false_iff; auto.
   Qed.
 *)
 
 Example test_nostutter_3:  nostutter [5].
 (* FILL IN HERE *) Admitted.
-(* 
+(*
   Proof. repeat constructor; apply beq_nat_false; auto. Qed.
 *)
 
 Example test_nostutter_4:      not (nostutter [3;1;1;4]).
 (* FILL IN HERE *) Admitted.
-(* 
+(*
   Proof. intro.
   repeat match goal with
     h: nostutter _ |- _ => inversion h; clear h; subst
