@@ -195,7 +195,17 @@ Theorem skip_right: forall c,
     (c ;; SKIP)
     c.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros c st st'.
+  split; intros H.
+
+  inversion H; subst; clear H.
+  inversion H5; subst; clear H5.
+  assumption.
+
+  apply E_Seq with st'.
+  assumption.
+  constructor.
+Qed.
 (** [] *)
 
 (** Similarly, here is a simple transformations that optimizes [IFB]
@@ -257,10 +267,10 @@ Proof.
    Here is the formal version of this proof: *)
 
 Theorem IFB_true: forall b c1 c2,
-     bequiv b BTrue  ->
-     cequiv
-       (IFB b THEN c1 ELSE c2 FI)
-       c1.
+    bequiv b BTrue  ->
+    cequiv
+      (IFB b THEN c1 ELSE c2 FI)
+      c1.
 Proof.
   intros b c1 c2 Hb.
   split; intros H.
@@ -284,7 +294,15 @@ Theorem IFB_false: forall b c1 c2,
     (IFB b THEN c1 ELSE c2 FI)
     c2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b c1 c2 Hb.
+  split; intros H.
+
+  inversion H; subst; try assumption.
+  unfold bequiv in Hb; simpl in Hb; rewrite Hb in H5; inversion H5.
+
+  apply E_IfFalse; try assumption.
+  unfold bequiv in Hb; simpl in Hb; apply Hb.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars (swap_if_branches)  *)
@@ -296,7 +314,22 @@ Theorem swap_if_branches: forall b e1 e2,
     (IFB b THEN e1 ELSE e2 FI)
     (IFB BNot b THEN e2 ELSE e1 FI).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b e1 e2.
+  split; intros H.
+
+  inversion H; subst.
+  apply E_IfFalse; try assumption.
+  simpl; rewrite negb_false_iff; assumption.
+  apply E_IfTrue; try assumption.
+  simpl; rewrite negb_true_iff; assumption.
+
+  inversion H; subst.
+  apply E_IfFalse; try assumption.
+  simpl in H5; rewrite negb_true_iff in H5; assumption.
+
+  apply E_IfTrue; try assumption.
+  simpl in H5; rewrite negb_false_iff in H5; assumption.
+Qed.
 (** [] *)
 
 (** For [WHILE] loops, we can give a similar pair of theorems.  A loop
@@ -393,7 +426,14 @@ Theorem WHILE_true: forall b c,
        (WHILE b DO c END)
        (WHILE BTrue DO SKIP END).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b c Hb.
+  split; intros H; apply except.
+
+  apply (WHILE_true_nonterm b c st st'); assumption.
+
+  apply (WHILE_true_nonterm BTrue SKIP st st'); try assumption.
+  unfold bequiv; reflexivity.
+Qed.
 (** [] *)
 
 Theorem loop_unrolling: forall b c,
@@ -424,7 +464,19 @@ Proof.
 Theorem seq_assoc : forall c1 c2 c3,
   cequiv ((c1;;c2);;c3) (c1;;(c2;;c3)).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros c1 c2 c3 st1 st4.
+  split; intros H.
+
+  inversion H; subst; rename st' into st3; clear H.
+  inversion H2; subst; rename st' into st2; clear H2.
+  apply E_Seq with st2; try assumption.
+  apply E_Seq with st3; try assumption.
+
+  inversion H; subst; rename st' into st2; clear H.
+  inversion H5; subst; rename st' into st3; clear H5.
+  apply E_Seq with st3; try assumption.
+  apply E_Seq with st2; try assumption.
+Qed.
 (** [] *)
 
 (** Proving program properties involving assignments is one place
@@ -456,7 +508,18 @@ Theorem assign_aequiv : forall X e,
   aequiv (AId X) e ->
   cequiv SKIP (X ::= e).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X e He.
+  split; intros H.
+
+  replace st' with (t_update st X (aeval st e)).
+  apply E_Ass; reflexivity.
+  inversion H; subst; clear H.
+  unfold aequiv in He; rewrite <- He; simpl; apply t_update_same.
+
+  inversion H; subst; clear H.
+  rewrite <- He; simpl; rewrite t_update_same.
+  constructor.
+Qed.
 (** [] *)
 
 (* ####################################################### *)
@@ -864,7 +927,7 @@ Example fold_com_ex1 :
        Y ::= ANum 0
      FI;;
      IFB BLe (ANum 0)
-             (AMinus (ANum 4) (APlus (ANum 2) (ANum 1))) 
+             (AMinus (ANum 4) (APlus (ANum 2) (ANum 1)))
      THEN
        Y ::= ANum 0
      ELSE
@@ -1166,7 +1229,7 @@ Fixpoint subst_aexp (i : id) (u : aexp) (a : aexp) : aexp :=
 
 Example subst_aexp_ex :
   subst_aexp X (APlus (ANum 42) (ANum 53))
-             (APlus (AId Y) (AId X)) 
+             (APlus (AId Y) (AId X))
 = (APlus (AId Y) (APlus (ANum 42) (ANum 53))).
 Proof. reflexivity.  Qed.
 
@@ -1399,7 +1462,7 @@ Inductive ceval : com -> state -> state -> Prop :=
       c2 / st \\ st' ->
       (IFB b1 THEN c1 ELSE c2 FI) / st \\ st'
   | E_WhileEnd : forall (b1 : bexp) (st : state) (c1 : com),
-      beval st b1 = false -> 
+      beval st b1 = false ->
       (WHILE b1 DO c1 END) / st \\ st
   | E_WhileLoop : forall (st st' st'' : state) (b1 : bexp) (c1 : com),
       beval st b1 = true ->
@@ -1556,7 +1619,7 @@ End Himp.
 
 (** **** Exercise: 4 stars, optional (for_while_equiv)  *)
 (** This exercise extends the optional [add_for_loop] exercise from
-    the [Imp] chapter, where you were asked to extend the language 
+    the [Imp] chapter, where you were asked to extend the language
     of commands with C-style [for] loops.  Prove that the command:
 
       for (c1 ; b ; c2) {
@@ -1637,4 +1700,3 @@ Proof. (* FILL IN HERE *) Admitted.
 (** [] *)
 
 (** $Date: 2016-05-26 16:17:19 -0400 (Thu, 26 May 2016) $ *)
-
