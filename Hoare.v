@@ -639,7 +639,10 @@ Proof.
   apply hoare_consequence_pre
     with (P' := (fun st => st X = 1) [X |-> ANum 1]).
   apply hoare_asgn.
-  intros st H. unfold assn_sub, t_update. simpl. reflexivity.
+
+  intros st H.
+  unfold assn_sub.
+  apply t_update_eq.
 Qed.
 
 (** Finally, for convenience in some proofs, we can state a combined
