@@ -8,3 +8,9 @@ imp2.mli
 *.glob
 *.v.d
 *.aux
+plf-5.8/.lia.cache
+plf-5.8/.Makefile.coq.d
+plf-5.8/Makefile.coq
+plf-5.8/Makefile.coq.conf
+*.vok
+*.vos
